@@ -137,7 +137,6 @@ export default function Controller() {
     setCurrentPlayer(nextPlayer);
     setCurrentBid(nextPlayer ? nextPlayer.BasePrice : 0);
     setBidFinalized(false);
-    broadcastState({ showIntro: false });
   };
 
   const markUnsold = () => {
@@ -157,7 +156,6 @@ export default function Controller() {
     setCurrentBid(updatedPlayers[nextIndex].BasePrice);
     setBidFinalized(false);
     setBaseOverride("");
-    broadcastState({ showIntro: false });
   };
 
   const exportResults = () => {
