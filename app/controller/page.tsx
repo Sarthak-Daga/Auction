@@ -31,6 +31,9 @@ export default function Controller() {
   const [bidFinalized, setBidFinalized] = useState(false);
   const [searchNo, setSearchNo] = useState("");
   const [baseOverride, setBaseOverride] = useState<number | "">("");
+  const [showResetModal, setShowResetModal] = useState(false);
+  const [resetCode, setResetCode] = useState("");
+  const RESET_SECRET = "RESET2025";
 
   const MAX_PLAYERS_PER_TEAM = 8;
 
@@ -188,13 +191,19 @@ export default function Controller() {
 
     XLSX.writeFile(wb, "auction_results.xlsx");
   };
-  const resetAuction = () => {
+  const confirmResetAuction = () => {
+    if (resetCode.trim().toUpperCase() !== RESET_SECRET) {
+      alert("Invalid reset code ❌");
+      return;
+    }
+
+    // clear storage
     localStorage.removeItem("auction_state");
 
-    // send reset signal to display
+    // tell display to reset
     send({ reset: true });
 
-    // reset controller state (optional but clean)
+    // cleanup local state
     setPlayers([]);
     setTeams([]);
     setCurrentPlayer(null);
@@ -202,7 +211,11 @@ export default function Controller() {
     setCurrentBid(0);
     setBidFinalized(false);
 
-    // reload fresh data from excel
+    // close modal
+    setShowResetModal(false);
+    setResetCode("");
+
+    // fresh reload
     window.location.reload();
   };
 
@@ -377,13 +390,71 @@ export default function Controller() {
         >
           Export Auction Results (Excel)
         </button>
-      <button
-        onClick={resetAuction}
-        className="mt-4 px-6 py-3 ml-3 bg-red-700 text-white rounded-xl font-bold"
-      >
-        RESET AUCTION
-      </button>
+        <button
+          onClick={() => setShowResetModal(true)}
+          className="mt-4 px-6 py-3 bg-red-700 text-white rounded-xl font-bold"
+        >
+          RESET AUCTION
+        </button>
       </div>
+
+      {showResetModal && (
+  <div
+    className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm
+               flex items-center justify-center"
+  >
+    <div
+      className="bg-[#0b1220] border border-red-500/40
+                 rounded-2xl p-8 w-[380px] text-center"
+    >
+      <h2 className="text-2xl font-extrabold text-red-500 mb-4">
+        Confirm Reset
+      </h2>
+
+      <p className="text-[#94a3b8] mb-4 text-sm">
+        Type <span className="text-red-400 font-bold">RESET2025</span> to
+        permanently reset the auction.
+      </p>
+
+      <input
+        type="text"
+        value={resetCode}
+        onChange={(e) => setResetCode(e.target.value)}
+        className="w-full p-3 mb-4 rounded bg-[#0f172a]
+                   border border-red-500/40 text-white text-center
+                   tracking-widest"
+        placeholder="Enter reset code"
+      />
+
+      <div className="flex gap-4">
+        <button
+          onClick={() => {
+            setShowResetModal(false);
+            setResetCode("");
+          }}
+          className="flex-1 py-2 rounded-xl
+                     bg-gray-600 text-white font-bold"
+        >
+          Cancel
+        </button>
+
+        <button
+          onClick={confirmResetAuction}
+          className="flex-1 py-2 rounded-xl
+                     bg-red-600 text-white font-bold"
+        >
+          RESET
+        </button>
+      </div>
+    </div>
+  </div>
+)}
     </>
+    
   );
+
+  
+
 }
+
+
