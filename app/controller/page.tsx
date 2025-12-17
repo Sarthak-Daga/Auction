@@ -33,6 +33,7 @@ export default function Controller() {
   const [baseOverride, setBaseOverride] = useState<number | "">("");
   const [showResetModal, setShowResetModal] = useState(false);
   const [resetCode, setResetCode] = useState("");
+  const [showIntro, setShowIntro] = useState(false);
   const RESET_SECRET = "RESET2025";
 
   const MAX_PLAYERS_PER_TEAM = 8;
@@ -76,32 +77,26 @@ export default function Controller() {
   }, []);
 
   /* -------------------- BROADCAST (SINGLE SOURCE OF TRUTH) -------------------- */
-  const broadcastState = (
-    next?: Partial<{
-      players: Player[];
-      teams: Team[];
-      currentIndex: number;
-      currentPlayer: Player | null;
-      currentBid: number;
-    }>
-  ) => {
-    const state = {
-      players: next?.players ?? players,
-      teams: next?.teams ?? teams,
-      currentIndex: next?.currentIndex ?? currentIndex,
-      currentPlayer: next?.currentPlayer ?? currentPlayer,
-      currentBid: next?.currentBid ?? currentBid,
-    };
-
-    localStorage.setItem("auction_state", JSON.stringify(state));
-    send(state);
+  const broadcastState = () => {
+  const state = {
+    players,
+    teams,
+    currentIndex,
+    currentPlayer,
+    currentBid,
+    showIntro, // 👈 ONLY SOURCE
   };
+
+  localStorage.setItem("auction_state", JSON.stringify(state));
+  send(state);
+};
+
 
   /* -------------------- AUTO SYNC -------------------- */
   useEffect(() => {
     if (!currentPlayer) return;
     broadcastState();
-  }, [players, teams, currentIndex, currentPlayer, currentBid]);
+  }, [players, teams, currentIndex, currentPlayer, currentBid , showIntro]);
 
   /* -------------------- ACTIONS -------------------- */
 
@@ -113,6 +108,8 @@ export default function Controller() {
     setCurrentPlayer(players[idx]);
     setCurrentBid(players[idx].BasePrice);
     setBidFinalized(false);
+    setShowIntro(true);
+
   };
 
   const awardPlayer = (teamIndex: number) => {
@@ -140,6 +137,7 @@ export default function Controller() {
     setCurrentPlayer(nextPlayer);
     setCurrentBid(nextPlayer ? nextPlayer.BasePrice : 0);
     setBidFinalized(false);
+    broadcastState({ showIntro: false });
   };
 
   const markUnsold = () => {
@@ -159,6 +157,7 @@ export default function Controller() {
     setCurrentBid(updatedPlayers[nextIndex].BasePrice);
     setBidFinalized(false);
     setBaseOverride("");
+    broadcastState({ showIntro: false });
   };
 
   const exportResults = () => {
@@ -336,6 +335,13 @@ export default function Controller() {
                 >
                   Unsold
                 </button>
+
+                <button
+                  onClick={() => setShowIntro(false)}
+                  className="px-6 py-3 bg-purple-600 text-white rounded-xl font-bold"
+                >
+                  REVEAL AUCTION
+                </button>
               </div>
 
               {bidFinalized && (
@@ -399,62 +405,56 @@ export default function Controller() {
       </div>
 
       {showResetModal && (
-  <div
-    className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm
+        <div
+          className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm
                flex items-center justify-center"
-  >
-    <div
-      className="bg-[#0b1220] border border-red-500/40
-                 rounded-2xl p-8 w-[380px] text-center"
-    >
-      <h2 className="text-2xl font-extrabold text-red-500 mb-4">
-        Confirm Reset
-      </h2>
+        >
+          <div
+            className="bg-[#0b1220] border border-red-500/40
+                 rounded-2xl p-8 w-95 text-center"
+          >
+            <h2 className="text-2xl font-extrabold text-red-500 mb-4">
+              Confirm Reset
+            </h2>
 
-      <p className="text-[#94a3b8] mb-4 text-sm">
-        Type <span className="text-red-400 font-bold">RESET2025</span> to
-        permanently reset the auction.
-      </p>
+            <p className="text-[#94a3b8] mb-4 text-sm">
+              Type <span className="text-red-400 font-bold">RESET2025</span> to
+              permanently reset the auction.
+            </p>
 
-      <input
-        type="text"
-        value={resetCode}
-        onChange={(e) => setResetCode(e.target.value)}
-        className="w-full p-3 mb-4 rounded bg-[#0f172a]
+            <input
+              type="text"
+              value={resetCode}
+              onChange={(e) => setResetCode(e.target.value)}
+              className="w-full p-3 mb-4 rounded bg-[#0f172a]
                    border border-red-500/40 text-white text-center
                    tracking-widest"
-        placeholder="Enter reset code"
-      />
+              placeholder="Enter reset code"
+            />
 
-      <div className="flex gap-4">
-        <button
-          onClick={() => {
-            setShowResetModal(false);
-            setResetCode("");
-          }}
-          className="flex-1 py-2 rounded-xl
+            <div className="flex gap-4">
+              <button
+                onClick={() => {
+                  setShowResetModal(false);
+                  setResetCode("");
+                }}
+                className="flex-1 py-2 rounded-xl
                      bg-gray-600 text-white font-bold"
-        >
-          Cancel
-        </button>
+              >
+                Cancel
+              </button>
 
-        <button
-          onClick={confirmResetAuction}
-          className="flex-1 py-2 rounded-xl
+              <button
+                onClick={confirmResetAuction}
+                className="flex-1 py-2 rounded-xl
                      bg-red-600 text-white font-bold"
-        >
-          RESET
-        </button>
-      </div>
-    </div>
-  </div>
-)}
+              >
+                RESET
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </>
-    
   );
-
-  
-
 }
-
-
